@@ -1,7 +1,8 @@
 import streamlit as st
-import google.generativeai as genai
+import requests
+import json
 
-# --- CONFIGURATION ---
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="AI MCQ Master", page_icon="📝")
 
 # --- AUTHENTICATION ---
@@ -20,27 +21,40 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # --- MAIN APP ---
-st.title("🌍 AI MCQ Generator")
-st.caption("Connected to Google Gemini")
+st.title("🌍 AI MCQ Generator (No-Install Version)")
+st.caption("Running in Direct Mode")
 
 api_key = st.sidebar.text_input("Google API Key:", type="password")
 
 with st.form("mcq"):
-    subject = st.text_input("Subject:", placeholder="e.g. Ancient Rome")
+    subject = st.text_input("Subject:", placeholder="e.g. World War II")
     count = st.slider("Questions", 3, 10, 5)
     submitted = st.form_submit_button("Generate")
 
 if submitted:
     if not api_key:
-        st.error("❌ Please enter API Key in the sidebar")
+        st.error("❌ API Key Required")
     else:
-        try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = f"Create {count} MCQs about {subject} with answers."
-
-            with st.spinner("Generating..."):
-                response = model.generate_content(prompt)
-                st.write(response.text)
-        except Exception as e:
-            st.error(f"Error: {e}")
+        # --- DIRECT API CALL (No Library Needed) ---
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        prompt_text = f"Create {count} multiple choice questions about {subject}. Format: Question, Options, Answer."
+        
+        data = {
+            "contents": [{
+                "parts": [{"text": prompt_text}]
+            }]
+        }
+        
+        with st.spinner("Connecting directly to Google..."):
+            try:
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+                if response.status_code == 200:
+                    result = response.json()
+                    # Extracting text safely
+                    text = result['candidates'][0]['content']['parts'][0]['text']
+                    st.markdown(text)
+                else:
+                    st.error(f"Error {response.status_code}: {response.text}")
+            except Exception as e:
+                st.error(f"Connection Failed: {e}")
