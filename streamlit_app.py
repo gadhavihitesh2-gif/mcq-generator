@@ -1,16 +1,7 @@
 import streamlit as st
-import subprocess
-import sys
+import google.generativeai as genai
 
-# --- MAGIC FIX: AUTO-INSTALL GOOGLE AI ---
-try:
-    import google.generativeai as genai
-except ImportError:
-    # If the tool is missing, this forces the server to install it right now
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
-    import google.generativeai as genai
-
-# --- PAGE SETUP ---
+# --- CONFIGURATION ---
 st.set_page_config(page_title="AI MCQ Master", page_icon="📝")
 
 # --- AUTHENTICATION ---
@@ -29,25 +20,25 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # --- MAIN APP ---
-st.title("🌍 World Internet MCQ Generator")
-st.caption("Auto-installed & Ready to go")
+st.title("🌍 AI MCQ Generator")
+st.caption("Connected to Google Gemini")
 
 api_key = st.sidebar.text_input("Google API Key:", type="password")
 
 with st.form("mcq"):
-    subject = st.text_input("Subject:", placeholder="e.g. Black Holes")
+    subject = st.text_input("Subject:", placeholder="e.g. Ancient Rome")
     count = st.slider("Questions", 3, 10, 5)
     submitted = st.form_submit_button("Generate")
 
 if submitted:
     if not api_key:
-        st.error("❌ Need API Key")
+        st.error("❌ Please enter API Key in the sidebar")
     else:
         try:
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-1.5-flash')
             prompt = f"Create {count} MCQs about {subject} with answers."
-            
+
             with st.spinner("Generating..."):
                 response = model.generate_content(prompt)
                 st.write(response.text)
