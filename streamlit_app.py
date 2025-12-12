@@ -1,91 +1,55 @@
 import streamlit as st
-import google.generativeai as genai
+import subprocess
+import sys
+
+# --- MAGIC FIX: AUTO-INSTALL GOOGLE AI ---
+try:
+    import google.generativeai as genai
+except ImportError:
+    # If the tool is missing, this forces the server to install it right now
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai"])
+    import google.generativeai as genai
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="AI MCQ Master", page_icon="📝", layout="centered")
+st.set_page_config(page_title="AI MCQ Master", page_icon="📝")
 
-# --- 1. AUTHENTICATION (The Lock) ---
+# --- AUTHENTICATION ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
 def check_password():
-    password = st.sidebar.text_input("Enter Password to Access:", type="password")
-    if password == "admin123":  # <--- PASSWORD IS: admin123
+    password = st.sidebar.text_input("Enter Password:", type="password")
+    if password == "admin123":
         st.session_state["authenticated"] = True
         st.rerun()
 
 if not st.session_state["authenticated"]:
     st.title("🔒 Login Required")
     check_password()
-    st.stop()  # Stop here if not logged in
+    st.stop()
 
-# --- 2. THE APP (Once Logged In) ---
+# --- MAIN APP ---
 st.title("🌍 World Internet MCQ Generator")
-st.markdown("Generates questions from the world's knowledge base instantly.")
+st.caption("Auto-installed & Ready to go")
 
-# API Key Input (Paste your AIza... key here when running)
-api_key = st.sidebar.text_input("Google API Key:", type="password", help="AIzaSyDd6xyTpUxdNsGgqox8GHex9mTEZS7yAfU")
+api_key = st.sidebar.text_input("Google API Key:", type="password")
 
-# User Inputs
-with st.form("mcq_form"):
-    subject = st.text_input("Enter Subject / Topic:", placeholder="e.g. Current Affairs 2024, Python Lists, Anatomy of Heart")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        difficulty = st.selectbox("Difficulty:", ["Easy", "Medium", "Hard", "Expert"])
-    with col2:
-        count = st.slider("Number of Questions:", 5, 20, 10)
-        
-    submitted = st.form_submit_button("Generate Questions 🚀")
+with st.form("mcq"):
+    subject = st.text_input("Subject:", placeholder="e.g. Black Holes")
+    count = st.slider("Questions", 3, 10, 5)
+    submitted = st.form_submit_button("Generate")
 
-# --- 3. THE BRAIN (Gemini Logic) ---
 if submitted:
     if not api_key:
-        st.error("❌ Please paste your Google API Key in the sidebar.")
-    elif not subject:
-        st.error("❌ Please enter a subject.")
+        st.error("❌ Need API Key")
     else:
         try:
-            # Connect to Google
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash') # Fast & Smart
-
-            # The Prompt
-            prompt = f"""
-            Act as a strict Examiner. Create {count} Multiple Choice Questions (MCQs) about: '{subject}'.
-            Difficulty Level: {difficulty}.
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            prompt = f"Create {count} MCQs about {subject} with answers."
             
-            SOURCE: Use your internal training data covering the world internet knowledge.
-
-            OUTPUT FORMAT:
-            ### Question [Number]
-            [Question Text]
-            
-            A) [Option]
-            B) [Option]
-            C) [Option]
-            D) [Option]
-            
-            **Correct Answer:** [Letter]
-            *Explanation: [Short reason why]*
-            
-            ---
-            """
-            
-            with st.spinner("🔍 Scanning knowledge base & generating..."):
+            with st.spinner("Generating..."):
                 response = model.generate_content(prompt)
-                
-            # Display Results
-            st.success("✅ Questions Generated Successfully!")
-            st.markdown(response.text)
-            
-            # Download Button
-            st.download_button(
-                label="📥 Download Questions (Text File)",
-                data=response.text,
-                file_name=f"{subject}_MCQ.txt",
-                mime="text/plain"
-            )
-
+                st.write(response.text)
         except Exception as e:
             st.error(f"Error: {e}")
