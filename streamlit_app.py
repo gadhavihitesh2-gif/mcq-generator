@@ -24,7 +24,7 @@ st.title("🌍 World Internet MCQ Generator")
 st.markdown("Generates questions from the world's knowledge base instantly.")
 
 # API Key Input (Paste your AIza... key here when running)
-api_key = st.sidebar.text_input("Google API Key:", type="password", help="Paste your Gemini API Key here")
+api_key = st.sidebar.text_input("Google API Key:", type="password", help="AIzaSyDd6xyTpUxdNsGgqox8GHex9mTEZS7yAfU")
 
 # User Inputs
 with st.form("mcq_form"):
