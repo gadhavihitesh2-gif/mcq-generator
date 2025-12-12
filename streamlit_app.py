@@ -21,8 +21,8 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # --- MAIN APP ---
-st.title("🌍 AI MCQ Generator (No-Install Version)")
-st.caption("Running in Direct Mode")
+st.title("🌍 AI MCQ Generator")
+st.caption("Universal Model (No Install Mode)")
 
 api_key = st.sidebar.text_input("Google API Key:", type="password")
 
@@ -35,10 +35,11 @@ if submitted:
     if not api_key:
         st.error("❌ API Key Required")
     else:
-        # --- DIRECT API CALL (No Library Needed) ---
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # --- FIXED URL: Using 'gemini-pro' (The Universal Model) ---
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
-        prompt_text = f"Create {count} multiple choice questions about {subject}. Format: Question, Options, Answer."
+        
+        prompt_text = f"Create {count} multiple choice questions about {subject}. Format: Question, Options, Answer. Do NOT use markdown bolding."
         
         data = {
             "contents": [{
@@ -46,15 +47,18 @@ if submitted:
             }]
         }
         
-        with st.spinner("Connecting directly to Google..."):
+        with st.spinner("Connecting to Google..."):
             try:
                 response = requests.post(url, headers=headers, data=json.dumps(data))
                 if response.status_code == 200:
                     result = response.json()
-                    # Extracting text safely
-                    text = result['candidates'][0]['content']['parts'][0]['text']
-                    st.markdown(text)
+                    # Safe extraction
+                    try:
+                        text = result['candidates'][0]['content']['parts'][0]['text']
+                        st.markdown(text)
+                    except:
+                        st.error("AI replied, but the format was unexpected. Try again.")
                 else:
-                    st.error(f"Error {response.status_code}: {response.text}")
+                    st.error(f"Google Error {response.status_code}: {response.text}")
             except Exception as e:
                 st.error(f"Connection Failed: {e}")
